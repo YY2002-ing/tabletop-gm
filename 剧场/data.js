@@ -38,7 +38,7 @@ window.THEATER = {
       ],
       materials: [
         {
-          id: "m1", title: "用「被调换的三页」反向定位内鬼", src: "场 1-2", status: "已选",
+          id: "m1", title: "用「被调换的三页」反向定位内鬼", src: "场 1-2", scenes: [1, 2], status: "已选",
           summary: "不追账目本身，追「谁能同时看到原册与参劾底稿」——嫌疑从满朝收窄到两人。",
           chain: [
             { kind: "判断", text: "换页人必须同时接触过原册与严照的参劾底稿", sub: [
@@ -51,7 +51,7 @@ window.THEATER = {
           ]
         },
         {
-          id: "m2", title: "封存档房＝合法的销毁", src: "场 2", status: "候选 · GM 推荐",
+          id: "m2", title: "封存档房＝合法的销毁", src: "场 2", scenes: [2], status: "候选 · GM 推荐",
           summary: "严照以「查案」名义请旨封档房——查案的程序本身可以是灭证的手段，权谋里最漂亮的刀都是合规的。"
         }
       ]

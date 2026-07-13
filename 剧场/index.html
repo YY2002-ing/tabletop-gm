@@ -84,6 +84,9 @@
   .kbadge.e { background: #e9dcd3; color: #5c4433; }
   .hlt .text { font-family: "Songti SC", serif; font-size: 14px; color: #3a382f; }
   .hlt .src { font-size: 11.5px; color: #a09d92; margin-top: 4px; }
+  .mat-hl { margin-top: 12px; border-top: 1px dashed #e6e3d8; padding-top: 10px; }
+  .mat-hl-t { font-size: 12px; color: #8a5a2b; margin-bottom: 8px; }
+  .hlt.sub { background: #faf6ef; border-color: #eee7d9; padding: 10px 14px; margin-bottom: 8px; }
   .none { font-size: 13px; color: #a09d92; }
 </style>
 </head>
@@ -182,13 +185,13 @@
     renderShelf();
   }
 
+  function hlItem(h, sub) {
+    return '<div class="hlt' + (sub ? " sub" : "") + '"><div class="text">' + h.text + '</div><div class="src">场 ' + h.scene + " · " + h.time.slice(0, 10) + "</div></div>";
+  }
   function renderShelf() {
     const myHL = HL.filter(h => h.campaign === C.id);
-    let html = "<h3>划线集（你在正文里收藏的句子）</h3>";
-    html += myHL.length
-      ? myHL.map(h => '<div class="hlt"><div class="text">' + h.text + '</div><div class="src">场 ' + h.scene + " · " + h.time.slice(0, 10) + "</div></div>").join("")
-      : '<div class="none">还没有划线。在「场景」页选中一段字，点「收藏划线」。</div>';
-    html += "<h3>剧情素材</h3>";
+    const matched = new Set();
+    let html = "<h3>剧情素材</h3>";
     html += (C.materials || []).length
       ? C.materials.map(m => {
           let s = '<div class="mat"><div class="t">' + m.title + ' <span class="badge ' + (m.status === "已选" ? "picked" : "cand") + '">' + m.status + "</span></div>";
@@ -200,9 +203,19 @@
               (n.sub || []).map(u => '<div class="cnode sub"><span class="kbadge ' + (u.kind === "判断" ? "j" : "e") + '">' + u.kind + "</span>" + u.text + "</div>").join("")
             ).join("") + "</div>";
           }
+          const mine = myHL.filter(h => (m.scenes || []).includes(h.scene));
+          if (mine.length) {
+            mine.forEach(h => matched.add(h));
+            s += '<div class="mat-hl"><div class="mat-hl-t">相关划线</div>' + mine.map(h => hlItem(h, true)).join("") + "</div>";
+          }
           return s + "</div>";
         }).join("")
       : '<div class="none">还没有素材。对 GM 说「提炼」。</div>';
+    const rest = myHL.filter(h => !matched.has(h));
+    html += "<h3>未入素材的划线</h3>";
+    html += rest.length
+      ? rest.map(h => hlItem(h, false)).join("")
+      : '<div class="none">' + (myHL.length ? "全部划线都已归进上面的素材。" : "还没有划线。在「场景」页选中一段字，点「收藏划线」。") + "</div>";
     document.getElementById("shelf").innerHTML = html;
   }
 
