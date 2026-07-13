@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台面剧场</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif;
+    background: #f4f2ec; color: #2c2c2a; padding: 24px 20px; line-height: 1.7;
+  }
+  .app { max-width: 1160px; margin: 0 auto; }
+  .topbar { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+  .topbar h1 { font-size: 20px; font-weight: 600; }
+  .topbar .clock { font-size: 13px; color: #8a887f; }
+  .topbar .safe { margin-left: auto; font-size: 12px; color: #a09d92; }
+  .topbar select { font-size: 13px; padding: 4px 8px; border: 1px solid #d9d6cb; border-radius: 6px; background: #fff; }
+  .tabs { display: flex; gap: 6px; margin: 14px 0; }
+  .tab {
+    font-size: 13.5px; padding: 7px 18px; border: 1px solid #d9d6cb; background: #fbfaf7;
+    border-radius: 20px; cursor: pointer; color: #6f6d64;
+  }
+  .tab.on { background: #7a5b47; border-color: #5c4433; color: #f5eee3; }
+  .panel { background: #fbfaf7; border: 1px solid #e6e3d8; border-radius: 12px; }
+  .view { display: none; }
+  .view.on { display: block; }
+
+  .reader { display: flex; min-height: 560px; }
+  .scene-list { width: 230px; border-right: 1px solid #e6e3d8; padding: 14px 0; flex-shrink: 0; }
+  .scene-item { padding: 9px 18px; cursor: pointer; font-size: 13.5px; color: #6f6d64; }
+  .scene-item .no { font-size: 11.5px; color: #a09d92; display: block; }
+  .scene-item.on { background: #f1e9dc; color: #2c2c2a; border-right: 3px solid #a8734a; }
+  .stage-wrap { flex: 1; position: relative; }
+  .stage { padding: 30px 44px; max-height: calc(100vh - 210px); overflow-y: auto; }
+  .stage h2 { font-size: 17px; font-weight: 600; margin-bottom: 2px; }
+  .stage .meta { font-size: 12px; color: #8a887f; margin-bottom: 20px; }
+  .script { font-family: "Songti SC", "STSong", serif; font-size: 15.5px; line-height: 2; color: #3a382f; }
+  .script p { margin-bottom: 14px; }
+  .script .me { color: #8a5a2b; }
+  .script span[data-a].jump { background: #f0d9ae; border-radius: 3px; transition: background 1.2s; }
+  .curtain { text-align: center; color: #a09d92; font-size: 12.5px; margin-top: 26px; font-family: -apple-system, "PingFang SC", sans-serif; }
+  #collect-btn {
+    position: absolute; display: none; font-size: 12.5px; padding: 5px 12px;
+    background: #7a5b47; color: #f5eee3; border: none; border-radius: 14px; cursor: pointer; z-index: 5;
+  }
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: #5c4433; color: #f5eee3; font-size: 13px; padding: 8px 18px;
+    border-radius: 18px; display: none; z-index: 9;
+  }
+
+  .tl { padding: 26px 40px; }
+  .tl-day { margin-bottom: 4px; font-size: 13px; font-weight: 600; color: #8a5a2b; }
+  .tl-item { display: flex; gap: 12px; padding: 7px 0 7px 10px; border-left: 2px solid #d9d6cb; margin-left: 6px; cursor: pointer; }
+  .tl-item:hover .fact { color: #8a5a2b; }
+  .tl-item .scene { font-size: 11.5px; color: #a09d92; flex-shrink: 0; padding-top: 2px; }
+  .tl-item .fact { font-size: 14px; color: #3a382f; }
+  .tl-gap { height: 14px; }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; padding: 24px; }
+  .char { background: #fff; border: 1px solid #e6e3d8; border-radius: 12px; padding: 16px 18px; }
+  .char .name { font-size: 15.5px; font-weight: 600; }
+  .char .role { font-size: 12.5px; color: #8a5a2b; margin-bottom: 8px; }
+  .char .seen { font-size: 13px; color: #55534b; }
+  .char .first { font-size: 11.5px; color: #a09d92; margin-top: 8px; }
+
+  .shelf { padding: 24px; }
+  .shelf h3 { font-size: 14px; color: #6f6d64; margin: 18px 0 10px; }
+  .shelf h3:first-child { margin-top: 0; }
+  .mat, .hlt { background: #fff; border: 1px solid #e6e3d8; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; }
+  .mat .t { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 11px; padding: 2px 9px; border-radius: 10px; font-weight: 400; }
+  .badge.picked { background: #7a5b47; color: #f5eee3; }
+  .badge.cand { background: #f1e1cc; color: #6b4423; }
+  .mat .src { font-size: 11.5px; color: #a09d92; margin: 2px 0 6px; }
+  .mat .body { font-size: 13.5px; color: #55534b; }
+  .chain { margin-top: 10px; }
+  .cnode { display: flex; gap: 8px; align-items: baseline; margin-top: 6px; font-size: 13.5px; color: #3a382f; }
+  .cnode.sub { margin-left: 26px; }
+  .cnode.sub::before { content: "↳"; color: #a09d92; }
+  .kbadge { font-size: 11px; padding: 1px 8px; border-radius: 9px; flex-shrink: 0; }
+  .kbadge.j { background: #7a5b47; color: #f5eee3; }
+  .kbadge.e { background: #e9dcd3; color: #5c4433; }
+  .hlt .text { font-family: "Songti SC", serif; font-size: 14px; color: #3a382f; }
+  .hlt .src { font-size: 11.5px; color: #a09d92; margin-top: 4px; }
+  .none { font-size: 13px; color: #a09d92; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>🎭 <span id="c-name"></span></h1>
+    <span class="clock" id="c-clock"></span>
+    <select id="c-pick" style="display:none"></select>
+    <span class="safe">台面剧场 · 只读台面与素材，幕后物理隔离</span>
+  </div>
+  <div class="tabs">
+    <div class="tab on" data-v="v-reader">场景</div>
+    <div class="tab" data-v="v-tl">时间线</div>
+    <div class="tab" data-v="v-chars">人物廊</div>
+    <div class="tab" data-v="v-mats">素材架</div>
+  </div>
+
+  <div class="panel view on" id="v-reader">
+    <div class="reader">
+      <div class="scene-list" id="scene-list"></div>
+      <div class="stage-wrap">
+        <div class="stage" id="stage"></div>
+        <button id="collect-btn">收藏划线</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel view" id="v-tl"><div class="tl" id="tl"></div></div>
+  <div class="panel view" id="v-chars"><div class="gallery" id="gallery"></div></div>
+  <div class="panel view" id="v-mats"><div class="shelf" id="shelf"></div></div>
+</div>
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script src="划线集.js"></script>
+<script>
+(function () {
+  const T = window.THEATER;
+  if (!T || !T.campaigns || !T.campaigns.length) {
+    document.querySelector(".app").innerHTML = '<div class="panel" style="padding:40px;text-align:center;color:#8a887f">还没有任何团。在跑团项目的 Claude Code 窗口里说「开团」，这里就会亮灯。</div>';
+    return;
+  }
+  let HL = window.HIGHLIGHTS || [];
+  let C = T.campaigns[0];
+  let currentScene = null;
+
+  const pick = document.getElementById("c-pick");
+  if (T.campaigns.length > 1) {
+    pick.style.display = "";
+    T.campaigns.forEach((c, i) => { const o = document.createElement("option"); o.value = i; o.textContent = c.name; pick.appendChild(o); });
+    pick.addEventListener("change", () => { C = T.campaigns[+pick.value]; renderAll(); });
+  }
+
+  function switchTab(id) {
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.v === id));
+    document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === id));
+  }
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => switchTab(t.dataset.v)));
+
+  function showScene(no) {
+    currentScene = no;
+    document.querySelectorAll(".scene-item").forEach(i => i.classList.toggle("on", +i.dataset.s === no));
+    const s = C.scenes.find(x => x.no === no);
+    document.getElementById("stage").innerHTML = "<h2>" + s.title + "</h2><div class='meta'>" + s.meta + "</div><div class='script'>" + s.html + "</div>";
+  }
+
+  function jumpTo(sceneNo, anchor) {
+    switchTab("v-reader");
+    showScene(sceneNo);
+    const el = document.querySelector('#stage span[data-a="' + anchor + '"]');
+    if (el) {
+      el.scrollIntoView({ block: "center" });
+      el.classList.add("jump");
+      setTimeout(() => el.classList.remove("jump"), 2600);
+    }
+  }
+
+  function renderAll() {
+    document.getElementById("c-name").textContent = C.name;
+    document.getElementById("c-clock").textContent = "剧情时间：" + C.clock + " · 已演 " + C.scenes.length + " 场";
+
+    const sl = document.getElementById("scene-list");
+    sl.innerHTML = C.scenes.map(s => '<div class="scene-item" data-s="' + s.no + '"><span class="no">场 ' + s.no + " · " + s.day + "</span>" + s.title + "</div>").join("");
+    sl.querySelectorAll(".scene-item").forEach(i => i.addEventListener("click", () => showScene(+i.dataset.s)));
+    showScene(C.scenes[C.scenes.length - 1].no);
+
+    document.getElementById("tl").innerHTML = C.timeline.map(d =>
+      '<div class="tl-day">' + d.day + "</div>" +
+      d.items.map(it => '<div class="tl-item" data-s="' + it.scene + '" data-a="' + it.anchor + '"><span class="scene">场' + it.scene + '</span><span class="fact">' + it.fact + "</span></div>").join("") +
+      '<div class="tl-gap"></div>').join("");
+    document.querySelectorAll(".tl-item").forEach(i => i.addEventListener("click", () => jumpTo(+i.dataset.s, i.dataset.a)));
+
+    document.getElementById("gallery").innerHTML = C.chars.map(ch =>
+      '<div class="char"><div class="name">' + ch.name + '</div><div class="role">' + ch.role + '</div><div class="seen">' + ch.seen + '</div><div class="first">' + ch.first + "</div></div>").join("");
+
+    renderShelf();
+  }
+
+  function renderShelf() {
+    const myHL = HL.filter(h => h.campaign === C.id);
+    let html = "<h3>划线集（你在正文里收藏的句子）</h3>";
+    html += myHL.length
+      ? myHL.map(h => '<div class="hlt"><div class="text">' + h.text + '</div><div class="src">场 ' + h.scene + " · " + h.time.slice(0, 10) + "</div></div>").join("")
+      : '<div class="none">还没有划线。在「场景」页选中一段字，点「收藏划线」。</div>';
+    html += "<h3>剧情素材</h3>";
+    html += (C.materials || []).length
+      ? C.materials.map(m => {
+          let s = '<div class="mat"><div class="t">' + m.title + ' <span class="badge ' + (m.status === "已选" ? "picked" : "cand") + '">' + m.status + "</span></div>";
+          s += '<div class="src">来源：' + m.src + "</div>";
+          s += '<div class="body">' + m.summary + "</div>";
+          if (m.chain) {
+            s += '<div class="chain">' + m.chain.map(n =>
+              '<div class="cnode"><span class="kbadge ' + (n.kind === "判断" ? "j" : "e") + '">' + n.kind + "</span>" + n.text + "</div>" +
+              (n.sub || []).map(u => '<div class="cnode sub"><span class="kbadge ' + (u.kind === "判断" ? "j" : "e") + '">' + u.kind + "</span>" + u.text + "</div>").join("")
+            ).join("") + "</div>";
+          }
+          return s + "</div>";
+        }).join("")
+      : '<div class="none">还没有素材。对 GM 说「提炼」。</div>';
+    document.getElementById("shelf").innerHTML = html;
+  }
+
+  /* ---------- 划线收藏 ---------- */
+  const btn = document.getElementById("collect-btn");
+  const stageWrap = document.querySelector(".stage-wrap");
+  let pendingText = "";
+  document.getElementById("stage").addEventListener("mouseup", () => {
+    setTimeout(() => {
+      const sel = window.getSelection();
+      const text = sel.toString().trim();
+      if (text.length >= 4) {
+        pendingText = text;
+        const r = sel.getRangeAt(0).getBoundingClientRect();
+        const w = stageWrap.getBoundingClientRect();
+        btn.style.left = Math.max(8, r.left - w.left) + "px";
+        btn.style.top = (r.bottom - w.top + 8) + "px";
+        btn.style.display = "block";
+      } else { btn.style.display = "none"; }
+    }, 10);
+  });
+  btn.addEventListener("click", async () => {
+    btn.style.display = "none";
+    const item = { campaign: C.id, scene: currentScene, text: pendingText, time: new Date().toISOString() };
+    try {
+      const res = await fetch("/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
+      if (!res.ok) throw 0;
+      HL.push(item); renderShelf(); toast("已收进划线集");
+    } catch (e) {
+      toast("只读模式存不了划线——请双击「启动剧场.command」打开");
+    }
+    window.getSelection().removeAllRanges();
+  });
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.style.display = "block";
+    clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = "none"; }, 2600);
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
